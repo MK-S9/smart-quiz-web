@@ -1,4 +1,3 @@
-
 from fastapi import FastAPI, File, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
 import fitz  # PyMuPDF
@@ -25,7 +24,7 @@ def is_fact_line(line):
     return any(x in line for x in [":", "-", "→", "->", "—", "=", "types", "adopted", "added", "date"])
 
 def clean_line(line):
-    return re.sub(r"[^\w\s:\-→–=]", "", line).strip()
+    return re.sub(r"[^\\w\\s:\\-→–=]", "", line).strip()
 
 def generate_rule_based_questions(text, max_q=10):
     lines = [clean_line(l) for l in text.splitlines() if len(l.strip()) > 15 and is_fact_line(l)]
@@ -52,16 +51,16 @@ def generate_rule_based_questions(text, max_q=10):
                 "options": list(set(options)),
                 "answer": answer
             })
-        elif "added" in line or "adopted" in line or "enforced" in line:
+        elif any(word in line.lower() for word in ["added", "adopted", "enforced"]):
             words = line.split()
-            date = [w for w in words if re.match(r"\d{4}|\d{1,2}\s\w+", w)]
+            date = next((w for w in words if re.match(r"\\d{4}", w)), None)
             if date:
-                options = [date[0], "1947", "1950", "1976"]
+                options = [date, "1947", "1950", "1976"]
                 random.shuffle(options)
                 questions.append({
-                    "question": f"When was this true? — "{line}"",
+                    "question": f"When was this true? — \"{line}\"",
                     "options": options,
-                    "answer": date[0]
+                    "answer": date
                 })
 
     return questions
